@@ -5,26 +5,25 @@
 
 //#define DIAGNOSTICS
 #ifdef DIAGNOSTICS
-#include <iostream> //>:<
+#include <iostream>
 #endif
-
-//TODO:
-//(does it take time to access a member of a data structure vs. a variable?)
-//Determine if remainingUnsortedElements needs to be used.
-//Function to determine # of sets to allocate and # of elements to allocate
 
 
 /****************************************************************
-The idea behind nested set sort is to put elements in order without any move operations. This is accomplished by creating a set, which is sorted,
-but only adds additional elements if those elements are greater than or less than any elements in the set. When an additional element needs is
-added but does not fit the criteria for including it in the set, it falls down to a nested set that holds all the elements with values between the
-values of the 2 elements of the parent set.
+-The idea behind nested set sort is to put elements in order with few move operations. This is accomplished by creating a set, which will be populated
+with sorted elements, and only adding additional elements if there are few prior elements that will have to be moved. If too many prior elements would
+have to be moved, the element will be placed into a nested set associated with its position in the parent set
+-Elements can be moved higher or lower in a sorted set to create space for the new inserted element, so as long as the new element is close to the 
+beginning or end of the sorted set, it can be inserted.
+-When an additional element is added but does not fit the criteria for including it in the set, it falls down to a nested set. This nested set is associated
+with the smaller of the two elements in the parent set it falls between.
 
 Example:
 {2} - First element
 {23} - Second element 3 is greater than all elements in the set, put it at the end
 {023} - Third element 0 is less than all elements in the set, put it at the beginning
-{0!23} 0:{1} - Fourth element 1 falls between two elements, put it in a nested set associated with the smaller of the two elements
+{0!23} 0:{1} - Inserting fourth element 1 would require move operations, so put it in a nested set associated with the smaller of the two elements it falls 
+between
 
 When all elements have been sorted, the full, sorted array can be constructed by starting at the first element of the parent set and copying the elements to 
 an array. After copying each element, check to see if the element has a nested array associated with it, as that nested array will contain values between it 
@@ -34,12 +33,22 @@ This sorting method can get very memory intensive in trade for speed
 *****************************************************************/
 
 
-int numberOfElements = 0;//Keep track of how much memory is used >:<
-int numberOfSets = 0;//Keep track of the total amount of sets >:<
+//TODO:
+//Determine optimized formulas for determining whether to insert an element or send it into a nested set. 
+//	Square root of the amount of elements to be sorted seems good. Can also make it a function of how many elements are left to sort 
+//	(if there are a lot of elements that remain to be sorted, moving multiple elements may pay dividends in the long run because subsequent searches
+//	will be searching through more elements in higher parent sets rather than searching through many small nested lists.
+//Assign memory outside the program and have it passed in as a variable, so successive sorts won't have to constantly assign memory. This should
+//	significantly help speed, as memory allocation seems to take a significant amount of the sorting algorithms time.
+//Try to consider/formulate ways to cut down on memory cost. Memory use becomes highly fragmented due to the worst-case-scenario memory allocation
+
+
+int numberOfElements = 0;//Keep track of how much memory is used
+int numberOfSets = 0;//Keep track of the total amount of sets
 
 	
 struct set; struct element;
-//Set data struct contains values of beginning index and ending index
+//Set data struct contains values of beginning index and ending index, and an array to all the elements it contains
 struct set{
 	element *array;
 	int firstElementIndex;
@@ -47,7 +56,7 @@ struct set{
 };
 
 
-//Element data struct contains the value of the element and a pointer to the nested array associated with it
+//Element data struct contains the value of the element and the nested array that may be associated with it (nullptr if none is)
 struct element{
 	int val;
 	set *nestedSet;
