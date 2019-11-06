@@ -66,19 +66,27 @@ struct element{
 
 //Returns the maximum number of elements to move when inserting an element. If the number of moves exceeds this, drop the element into a nested array.
 int maximumElementMoves(){
-	return 20000;
+	return 100;
 }
 
 
 //Insert an element into the array, using remainingUnsortedElements to determine whether it's worth it to move elements or to create a nested array
-void insertElement(int value,elementContainer* const destination,const int &remainingUnsortedElements,elementContainer* const allContainers, element* const allElements){
+void insertElement(int value,elementContainer* destination,const int &remainingUnsortedElements,elementContainer* const allContainers, element* const allElements){
 	
 	bool isHigherThanMedian;
 	int valuePosition; //The index of the greatest value less than or equal to the value to be inserted
-	int low = destination->firstElementIndex;
-	int high = destination->lastElementIndex;
-	int mid = (low+high) / 2;
+	int low;
+	int high;
+	int mid;
 	
+	
+	//while the element has yet to be inserted, compare it with the elements in the destination elementContainer
+	while(true){
+	
+	
+	low = destination->firstElementIndex;
+	high = destination->lastElementIndex;
+	mid = (low+high) / 2;
 	
 	//Check to see if the value to insert is higher or lower than the median, while updating low / high value for binary search
 	mid = (low + high) / 2;
@@ -127,7 +135,8 @@ void insertElement(int value,elementContainer* const destination,const int &rema
 		else{
 			//if a nested array already exists
 			if(destination->array[valuePosition].nestedArray != nullptr){
-				insertElement(value,destination->array[valuePosition].nestedArray,remainingUnsortedElements,allContainers,allElements);
+				destination = destination->array[valuePosition].nestedArray;
+				continue;
 			}
 			//else create a nested array and assign it memory
 			else{
@@ -140,6 +149,7 @@ void insertElement(int value,elementContainer* const destination,const int &rema
 				destination->array[valuePosition].nestedArray->lastElementIndex = destination->array[valuePosition].nestedArray->firstElementIndex;
 				destination->array[valuePosition].nestedArray->array[destination->array[valuePosition].nestedArray->firstElementIndex].val = value;
 				destination->array[valuePosition].nestedArray->array[destination->array[valuePosition].nestedArray->firstElementIndex].nestedArray = nullptr;
+				return;
 			}
 		}
 		
@@ -160,7 +170,8 @@ void insertElement(int value,elementContainer* const destination,const int &rema
 		else{
 			//if a nested elementContainer already exists
 			if(destination->array[valuePosition].nestedArray != nullptr){
-				insertElement(value,destination->array[valuePosition].nestedArray,remainingUnsortedElements,allContainers,allElements);
+				destination = destination->array[valuePosition].nestedArray;
+				continue;
 			}
 			//else create a nested elementContainer and assign it memory
 			else{
@@ -173,10 +184,13 @@ void insertElement(int value,elementContainer* const destination,const int &rema
 				destination->array[valuePosition].nestedArray->lastElementIndex = destination->array[valuePosition].nestedArray->firstElementIndex;
 				destination->array[valuePosition].nestedArray->array[destination->array[valuePosition].nestedArray->firstElementIndex].val = value;
 				destination->array[valuePosition].nestedArray->array[destination->array[valuePosition].nestedArray->firstElementIndex].nestedArray = nullptr;
+				return;
 			}
 		}
 	}
-	return;
+	
+	
+	}//End while the element has yet to be inserted
 }
 
 
