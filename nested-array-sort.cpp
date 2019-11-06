@@ -2,7 +2,6 @@
 
 #include <cstring>
 
-
 //#define DIAGNOSTICS
 #ifdef DIAGNOSTICS
 #include <iostream>
@@ -47,8 +46,32 @@ This sorting method can get very memory intensive in trade for speed (O(N^2))
 int numberOfElements = 0;//Keep track of how much memory is used
 int numberOfArrays = 0;//Keep track of the total amount of arrays
 
-	
+
 struct elementContainer; struct element;
+
+
+//Return the maximum amount of element moves allowed for the insertion of an element
+int maximumElementMoves();
+
+//Insert an element into the elementContainer
+void insertElement(int value,elementContainer* const destination,const int &remainingUnsortedElements,elementContainer* const allContainers, element* const allElements);
+
+//Extract the elements from their nested elementContainers and put them in the correct, sorted order into a standard array
+void placeElementsInArray(elementContainer *source, int *array);
+
+//Perform nestedArraySort with internal allocation/deallocation of memory
+void nestedArraySort(int *array, int arrayLength);
+//Perform nestedArraySort with external allocation/deallocation of memory
+void nestedArraySort(int *array, int arrayLength, elementContainer* const allContainers, element* const allElements);
+
+//Allocates memory for allContainers and allElements based on the array length
+void allocateMemory(int arrayLength, elementContainer*& allContainers, element*& allElements);
+//Deallocates memory for allContainers and allElements
+void deallocateMemory(elementContainer*& allContainers, element*& allElements);
+
+
+
+
 //elementContainer data struct contains values of beginning index and ending index, and an array for all the elements it contains
 struct elementContainer{
 	element *array;
@@ -70,7 +93,7 @@ int maximumElementMoves(){
 }
 
 
-//Insert an element into the array, using remainingUnsortedElements to determine whether it's worth it to move elements or to create a nested array
+//Insert an element into the elementContainer
 void insertElement(int value,elementContainer* const destination,const int &remainingUnsortedElements,elementContainer* const allContainers, element* const allElements){
 	
 	bool isHigherThanMedian;
@@ -193,13 +216,32 @@ void placeElementsInArray(elementContainer *source, int *array){
 }
 
 
-void nestedArraySort(int *array, int arrayLength){
-	if(arrayLength == 0)
+//Allocates memory for allContainers and allElements based on the array length
+void allocateMemory(int arrayLength, elementContainer*& allContainers, element*& allElements){
+	allContainers = new elementContainer[5000];
+	allElements = new element[70'000'000];
+}
+//Deallocates memory for allContainers and allElements
+void deallocateMemory(elementContainer*& allContainers, element*& allElements){
+	delete[] allContainers;
+	delete[] allElements;
+	allContainers = nullptr;
+	allElements = nullptr;
+}
+
+
+void nestedArraySort(int* array, int arrayLength){
+	elementContainer* allContainers = nullptr;
+	element* allElements = nullptr;
+	allocateMemory(arrayLength,allContainers,allElements);
+	nestedArraySort(array, arrayLength, allContainers, allElements);
+	deallocateMemory(allContainers,allElements);
+}
+
+
+void nestedArraySort(int *array, int arrayLength, elementContainer* const allContainers, element* const allElements){
+	if(arrayLength <= 1)
 		return;
-	
-	//Allocate memory for all elementContainers and elements that may be required
-	elementContainer *allContainers = new elementContainer[5000];
-	element *allElements = new element[70'000'000];
 	
 	//Assign parent elementContainer
 	elementContainer *parent = allContainers;
@@ -229,7 +271,4 @@ void nestedArraySort(int *array, int arrayLength){
 	std::cout << "Size of elementContainer: " << sizeof(elementContainer) << ", size of element: " << sizeof(element) << "\nFor a total memory usage of: " << 
 	sizeof(elementContainer) * numberOfArrays + sizeof(element) * numberOfElements << "\n";
 	#endif
-	
-	delete[] allContainers;
-	delete[] allElements;
 }
