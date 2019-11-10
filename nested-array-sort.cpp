@@ -1,6 +1,6 @@
 //Nested array sort
 
-#include <cstring>
+#include <cstring> //memmove
 
 //#define DIAGNOSTICS
 #ifdef DIAGNOSTICS
@@ -37,39 +37,13 @@ This sorting method can get very memory intensive in trade for speed (O(N^2))
 //	Square root of the amount of elements to be sorted seems good. Can also make it a function of how many elements are left to sort 
 //	(if there are a lot of elements that remain to be sorted, moving multiple elements may pay dividends in the long run because subsequent searches
 //	will be searching through more elements in higher parent array rather than searching through many small nested arrays.)
-//Assign memory outside the program and have it passed in as a variable, so successive sorts won't have to constantly assign memory. This should
-//	significantly help speed, as memory allocation seems to take a significant amount of the sorting algorithms time.
 //Try to consider/formulate ways to cut down on memory cost. Memory use becomes highly fragmented due to the worst-case-scenario memory allocation
 //Move binary search to its own function
 
+#include "nested-array-sort.h"
 
 int numberOfElements = 0;//Keep track of how much memory is used
 int numberOfArrays = 0;//Keep track of the total amount of arrays
-
-
-struct elementContainer; struct element;
-
-
-//Return the maximum amount of element moves allowed for the insertion of an element
-int maximumElementMoves();
-
-//Insert an element into the elementContainer
-void insertElement(int value,elementContainer* const destination,const int &remainingUnsortedElements,elementContainer* const allContainers, element* const allElements);
-
-//Extract the elements from their nested elementContainers and put them in the correct, sorted order into a standard array
-void placeElementsInArray(elementContainer *source, int *array);
-
-//Perform nestedArraySort with internal allocation/deallocation of memory
-void nestedArraySort(int *array, int arrayLength);
-//Perform nestedArraySort with external allocation/deallocation of memory
-void nestedArraySort(int *array, int arrayLength, elementContainer* const allContainers, element* const allElements);
-
-//Allocates memory for allContainers and allElements based on the array length
-void allocateMemory(int arrayLength, elementContainer*& allContainers, element*& allElements);
-//Deallocates memory for allContainers and allElements
-void deallocateMemory(elementContainer*& allContainers, element*& allElements);
-
-
 
 
 //elementContainer data struct contains values of beginning index and ending index, and an array for all the elements it contains
@@ -89,19 +63,25 @@ struct element{
 
 //Returns the maximum number of elements to move when inserting an element. If the number of moves exceeds this, drop the element into a nested array.
 int maximumElementMoves(){
-	return 20000;
+	return 100;
 }
 
 
 //Insert an element into the elementContainer
-void insertElement(int value,elementContainer* const destination,const int &remainingUnsortedElements,elementContainer* const allContainers, element* const allElements){
+void insertElement(int value,elementContainer* destination,const int &remainingUnsortedElements,elementContainer* const allContainers, element* const allElements){
 	
 	bool isHigherThanMedian;
 	int valuePosition; //The index of the greatest value less than or equal to the value to be inserted
-	int low = destination->firstElementIndex;
-	int high = destination->lastElementIndex;
-	int mid = (low+high) / 2;
+	int low;
+	int high;
+	int mid;
 	
+	//Loop until the element is inserted
+	while(true){
+	
+	low = destination->firstElementIndex;
+	high = destination->lastElementIndex;
+	mid = (low+high) / 2;
 	
 	//Check to see if the value to insert is higher or lower than the median, while updating low / high value for binary search
 	mid = (low + high) / 2;
@@ -150,7 +130,8 @@ void insertElement(int value,elementContainer* const destination,const int &rema
 		else{
 			//if a nested array already exists
 			if(destination->array[valuePosition].nestedArray != nullptr){
-				insertElement(value,destination->array[valuePosition].nestedArray,remainingUnsortedElements,allContainers,allElements);
+				destination = destination->array[valuePosition].nestedArray;
+				continue;
 			}
 			//else create a nested array and assign it memory
 			else{
@@ -163,6 +144,7 @@ void insertElement(int value,elementContainer* const destination,const int &rema
 				destination->array[valuePosition].nestedArray->lastElementIndex = destination->array[valuePosition].nestedArray->firstElementIndex;
 				destination->array[valuePosition].nestedArray->array[destination->array[valuePosition].nestedArray->firstElementIndex].val = value;
 				destination->array[valuePosition].nestedArray->array[destination->array[valuePosition].nestedArray->firstElementIndex].nestedArray = nullptr;
+				return;
 			}
 		}
 		
@@ -183,7 +165,8 @@ void insertElement(int value,elementContainer* const destination,const int &rema
 		else{
 			//if a nested elementContainer already exists
 			if(destination->array[valuePosition].nestedArray != nullptr){
-				insertElement(value,destination->array[valuePosition].nestedArray,remainingUnsortedElements,allContainers,allElements);
+				destination = destination->array[valuePosition].nestedArray;
+				continue;
 			}
 			//else create a nested elementContainer and assign it memory
 			else{
@@ -196,10 +179,13 @@ void insertElement(int value,elementContainer* const destination,const int &rema
 				destination->array[valuePosition].nestedArray->lastElementIndex = destination->array[valuePosition].nestedArray->firstElementIndex;
 				destination->array[valuePosition].nestedArray->array[destination->array[valuePosition].nestedArray->firstElementIndex].val = value;
 				destination->array[valuePosition].nestedArray->array[destination->array[valuePosition].nestedArray->firstElementIndex].nestedArray = nullptr;
+				return;
 			}
 		}
 	}
-	return;
+	
+	
+	}//End while loop
 }
 
 
