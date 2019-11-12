@@ -2,7 +2,7 @@
 
 #include <cstring> //memmove
 
-//#define DIAGNOSTICS
+#define DIAGNOSTICS //>:>
 #ifdef DIAGNOSTICS
 #include <iostream>
 #endif
@@ -115,6 +115,7 @@ void insertElement(int value,elementContainer* destination,const int &remainingU
 	else
 		valuePosition = high - 1;
 	
+	
 	//if the value to be inserted is higher than the median then inserting it would move all elements greater than it 1 index higher.
 	//The opposite is done if the value is lower than the median (all elements less than or equal to the value to be inserted are moved an index lower)
 	if(isHigherThanMedian){
@@ -143,7 +144,7 @@ void insertElement(int value,elementContainer* destination,const int &remainingU
 				
 				destination->array[valuePosition].nestedArray->array = allElements + numberOfElements;
 				numberOfElements += 2*remainingUnsortedElements;
-				destination->array[valuePosition].nestedArray->firstElementIndex = remainingUnsortedElements - 1;
+				destination->array[valuePosition].nestedArray->firstElementIndex = remainingUnsortedElements;
 				destination->array[valuePosition].nestedArray->lastElementIndex = destination->array[valuePosition].nestedArray->firstElementIndex;
 				destination->array[valuePosition].nestedArray->array[destination->array[valuePosition].nestedArray->firstElementIndex].val = value;
 				destination->array[valuePosition].nestedArray->array[destination->array[valuePosition].nestedArray->firstElementIndex].nestedArray = nullptr;
@@ -178,7 +179,7 @@ void insertElement(int value,elementContainer* destination,const int &remainingU
 				
 				destination->array[valuePosition].nestedArray->array = allElements + numberOfElements;
 				numberOfElements += 2*remainingUnsortedElements;
-				destination->array[valuePosition].nestedArray->firstElementIndex = remainingUnsortedElements - 1;
+				destination->array[valuePosition].nestedArray->firstElementIndex = remainingUnsortedElements;
 				destination->array[valuePosition].nestedArray->lastElementIndex = destination->array[valuePosition].nestedArray->firstElementIndex;
 				destination->array[valuePosition].nestedArray->array[destination->array[valuePosition].nestedArray->firstElementIndex].val = value;
 				destination->array[valuePosition].nestedArray->array[destination->array[valuePosition].nestedArray->firstElementIndex].nestedArray = nullptr;
@@ -241,7 +242,7 @@ void nestedArraySort(int *array, int arrayLength, elementContainer* const allCon
 	parent->array = allElements; //2 times the array length, because the starting element is in the middle, and hypothetically the length of the array can span n elements to the end (each element higher than the previous) or n elements to the beginning (each element lower than the previous)
 	numberOfElements += 2*arrayLength;	//Subsequent arrays will be assigned at allElements[numberOfElements] so that two arrays never overlap
 	//Add the initial element
-	parent->firstElementIndex = arrayLength - 1;	//halfway between the beginning and end of parent->array
+	parent->firstElementIndex = arrayLength;	//halfway between the beginning and end of parent->array
 	parent->lastElementIndex = parent->firstElementIndex;
 	parent->array[parent->firstElementIndex].val = array[0];
 	parent->array[parent->firstElementIndex].nestedArray = nullptr;
