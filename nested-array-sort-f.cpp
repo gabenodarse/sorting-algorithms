@@ -31,18 +31,30 @@ an array. After copying each element, check to see if the element has a nested a
 and the next element in the parent
 
 This sorting method can get very memory intensive in trade for speed (O(N^2))
+
+
+FIXED SIZE NESTED ARRAY SORT*******************************************
+******************************************************************
+-What differentiates fixed size nested array sort from regular nested array sort, is that elements are placed into nested arrays not when the amount of moves
+needed to do so is too high, but instead when the amount of elements in the parent array becomes too high. This harms performance besides for in a
+minuscule amount of cases, but reduces memory consumption from an absurd amount to a reasonable amount.
+-One inspiration for this alternative was the realization of the uneven distribution of elements in nested arrays of the original method. The space between
+elements in the middle of an array end up farther apart than ones nearer the edge, because the algorithm forbids moving elements near the center to insert
+elements between. Ideally, nested arrays would contain an equal amount of elements, and this becomes a mitigating advantage for the performance of this 
+alternative compared to the original.
 *****************************************************************/
 
 
 //TODO:
-//Determine optimized formulas for determining whether to insert an element or send it into a nested array. 
-//	Square root of the amount of elements to be sorted seems good. Can also make it a function of how many elements are left to sort 
+//Determine optimized formulas for the size of a fixed array
+//	Allowing more the parent array to contain more elements than nested arrays would benefit the average case
 //	(if there are a lot of elements that remain to be sorted, moving multiple elements may pay dividends in the long run because subsequent searches
 //	will be searching through more elements in higher parent array rather than searching through many small nested arrays.)
-//Try to consider/formulate ways to cut down on memory cost. Memory use becomes highly fragmented due to the worst-case-scenario memory allocation
 //Move binary search to its own function
 
 #include "nested-array-sort.h"
+
+int maximumArraySize();
 
 int numberOfElements = 0;//Keep track of how much memory is used
 int numberOfArrays = 0;//Keep track of the total amount of arrays
@@ -53,6 +65,7 @@ struct elementContainer{
 	element *array;
 	int firstElementIndex;
 	int lastElementIndex;
+	int numElements;
 };
 
 
@@ -64,7 +77,7 @@ struct element{
 
 
 //Returns the maximum number of elements to move when inserting an element. If the number of moves exceeds this, drop the element into a nested array.
-int maximumElementMoves(){
+int maximumArraySize(){
 	return 100;
 }
 
@@ -114,21 +127,34 @@ void insertElement(int value,elementContainer* destination,const int &remainingU
 	else
 		valuePosition = high - 1;
 	
-	
-	//if the value to be inserted is higher than the median then inserting it would move all elements greater than it 1 index higher.
-	//The opposite is done if the value is lower than the median (all elements less than or equal to the value to be inserted are moved an index lower)
-	if(isHigherThanMedian){
-		
-		//if the value is close enough to the edge of the array, move the elements in the array to insert the element.
+		//if the array is small enough, move the elements in the array to insert the element.
 		//else insert the element into a nested array
-		if(destination->lastElementIndex - valuePosition <= maximumElementMoves()){
-			//move the elements in the array over, insert the new value, and return
-			memmove(destination->array + valuePosition + 2,destination->array + valuePosition + 1,
-				sizeof(element) * (destination->lastElementIndex - valuePosition));
-			destination->array[valuePosition + 1].val = value;
-			destination->array[valuePosition + 1].nestedArray = nullptr;
-			++destination->lastElementIndex;
-			return;
+		if(destination->numElements <= maximumArraySize()){
+			
+			//if the value to be inserted is higher than the median then inserting it would move all elements greater than it 1 index higher.
+			//The opposite is done if the value is lower than the median (all elements less than or equal to the value to be inserted are moved an index lower)
+			if(isHigherThanMedian){
+				
+				//move the elements in the array over, insert the new value, and return
+				memmove(destination->array + valuePosition + 2,destination->array + valuePosition + 1,
+					sizeof(element) * (destination->lastElementIndex - valuePosition));
+				destination->array[valuePosition + 1].val = value;
+				destination->array[valuePosition + 1].nestedArray = nullptr;
+				++destination->lastElementIndex;
+				++destination->numElements;
+				return;
+			}
+			
+			else{
+				//move the elements in the array over, insert the new value, and return
+				memmove(destination->array + destination->firstElementIndex - 1,destination->array + destination->firstElementIndex,
+					sizeof(element) * (valuePosition - destination->firstElementIndex + 1));
+				destination->array[valuePosition].val = value;
+				destination->array[valuePosition].nestedArray = nullptr;
+				--destination->firstElementIndex;
+				++destination->numElements;
+				return;
+			}
 		}
 		else{
 			//if a nested array already exists
@@ -142,52 +168,18 @@ void insertElement(int value,elementContainer* destination,const int &remainingU
 				++numberOfArrays;
 				
 				destination->array[valuePosition].nestedArray->array = allElements + numberOfElements;
-				numberOfElements += 2*remainingUnsortedElements;
-				destination->array[valuePosition].nestedArray->firstElementIndex = remainingUnsortedElements;
+				numberOfElements += 2 * maximumArraySize();
+				destination->array[valuePosition].nestedArray->firstElementIndex = maximumArraySize();
 				destination->array[valuePosition].nestedArray->lastElementIndex = destination->array[valuePosition].nestedArray->firstElementIndex;
 				destination->array[valuePosition].nestedArray->array[destination->array[valuePosition].nestedArray->firstElementIndex].val = value;
 				destination->array[valuePosition].nestedArray->array[destination->array[valuePosition].nestedArray->firstElementIndex].nestedArray = nullptr;
-				return;
-			}
-		}
-		
-	}
-	else{
-		
-		//if the value is close enough to the edge of the array, move the elements in the array to insert the element.
-		//else insert the element into a nested elementContainer
-		if(valuePosition - destination->firstElementIndex <= maximumElementMoves()){
-			//move the elements in the array over, insert the new value, and return
-			memmove(destination->array + destination->firstElementIndex - 1,destination->array + destination->firstElementIndex,
-				sizeof(element) * (valuePosition - destination->firstElementIndex + 1));
-			destination->array[valuePosition].val = value;
-			destination->array[valuePosition].nestedArray = nullptr;
-			--destination->firstElementIndex;
-			return;
-		}
-		else{
-			//if a nested elementContainer already exists
-			if(destination->array[valuePosition].nestedArray != nullptr){
-				destination = destination->array[valuePosition].nestedArray;
-				continue;
-			}
-			//else create a nested elementContainer and assign it memory
-			else{
-				destination->array[valuePosition].nestedArray = allContainers + numberOfArrays;
-				++numberOfArrays;
+				destination->array[valuePosition].nestedArray->numElements = 1;
 				
-				destination->array[valuePosition].nestedArray->array = allElements + numberOfElements;
-				numberOfElements += 2*remainingUnsortedElements;
-				destination->array[valuePosition].nestedArray->firstElementIndex = remainingUnsortedElements;
-				destination->array[valuePosition].nestedArray->lastElementIndex = destination->array[valuePosition].nestedArray->firstElementIndex;
-				destination->array[valuePosition].nestedArray->array[destination->array[valuePosition].nestedArray->firstElementIndex].val = value;
-				destination->array[valuePosition].nestedArray->array[destination->array[valuePosition].nestedArray->firstElementIndex].nestedArray = nullptr;
 				return;
+				
 			}
 		}
-	}
-	
-	
+
 
 	}//End while loop
 }
@@ -208,8 +200,8 @@ void placeElementsInArray(elementContainer *source, int *array){
 
 //Allocates memory for allContainers and allElements based on the array length
 void allocateMemory(int arrayLength, elementContainer*& allContainers, element*& allElements){
-	allContainers = new elementContainer[5000];
-	allElements = new element[70'000'000];
+	allContainers = new elementContainer[10000];
+	allElements = new element[2'000'000];
 }
 //Deallocates memory for allContainers and allElements
 void deallocateMemory(elementContainer*& allContainers, element*& allElements){
@@ -238,11 +230,12 @@ void nestedArraySort(int *array, int arrayLength, elementContainer* const allCon
 	++numberOfArrays;
 	
 	//Assign the parent elementContainer's array
-	parent->array = allElements; //2 times the array length, because the starting element is in the middle, and hypothetically the length of the array can span n elements to the end (each element higher than the previous) or n elements to the beginning (each element lower than the previous)
-	numberOfElements += 2*arrayLength;	//Subsequent arrays will be assigned at allElements[numberOfElements] so that two arrays never overlap
+	parent->array = allElements; //2 times the maximum array length, because the starting element is in the middle, and hypothetically the length of the array can span n elements to the end (each element higher than the previous) or n elements to the beginning (each element lower than the previous)
+	numberOfElements += 2*maximumArraySize();	//Subsequent arrays will be assigned at allElements[numberOfElements] so that two arrays never overlap
 	//Add the initial element
 	parent->firstElementIndex = arrayLength;	//halfway between the beginning and end of parent->array
 	parent->lastElementIndex = parent->firstElementIndex;
+	parent->numElements = 1;
 	parent->array[parent->firstElementIndex].val = array[0];
 	parent->array[parent->firstElementIndex].nestedArray = nullptr;
 	
