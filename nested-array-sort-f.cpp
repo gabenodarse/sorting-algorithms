@@ -33,9 +33,9 @@ and the next element in the parent
 This sorting method can get very memory intensive in trade for speed (O(N^2))
 
 
-FIXED NESTED ARRAY SORT*******************************************
+FIXED SIZE NESTED ARRAY SORT*******************************************
 ******************************************************************
--What differentiates fixed nested array sort from regular nested array sort, is that elements are placed into nested arrays not when the amount of moves
+-What differentiates fixed size nested array sort from regular nested array sort, is that elements are placed into nested arrays not when the amount of moves
 needed to do so is too high, but instead when the amount of elements in the parent array becomes too high. This harms performance besides for in a
 minuscule amount of cases, but reduces memory consumption from an absurd amount to a reasonable amount.
 -One inspiration for this alternative was the realization of the uneven distribution of elements in nested arrays of the original method. The space between
@@ -170,7 +170,7 @@ void insertElement(int value,elementContainer* destination,const int &remainingU
 				
 				destination->array[valuePosition].nestedArray->array = allElements + numberOfElements;
 				numberOfElements += 2 * maximumArraySize();
-				destination->array[valuePosition].nestedArray->firstElementIndex = maximumArraySize() - 1;
+				destination->array[valuePosition].nestedArray->firstElementIndex = maximumArraySize();
 				destination->array[valuePosition].nestedArray->lastElementIndex = destination->array[valuePosition].nestedArray->firstElementIndex;
 				destination->array[valuePosition].nestedArray->array[destination->array[valuePosition].nestedArray->firstElementIndex].val = value;
 				destination->array[valuePosition].nestedArray->array[destination->array[valuePosition].nestedArray->firstElementIndex].nestedArray = nullptr;
@@ -234,7 +234,7 @@ void nestedArraySort(int *array, int arrayLength, elementContainer* const allCon
 	parent->array = allElements; //2 times the maximum array length, because the starting element is in the middle, and hypothetically the length of the array can span n elements to the end (each element higher than the previous) or n elements to the beginning (each element lower than the previous)
 	numberOfElements += 2*maximumArraySize();	//Subsequent arrays will be assigned at allElements[numberOfElements] so that two arrays never overlap
 	//Add the initial element
-	parent->firstElementIndex = arrayLength - 1;	//halfway between the beginning and end of parent->array
+	parent->firstElementIndex = arrayLength;	//halfway between the beginning and end of parent->array
 	parent->lastElementIndex = parent->firstElementIndex;
 	parent->numElements = 1;
 	parent->array[parent->firstElementIndex].val = array[0];
