@@ -1,4 +1,4 @@
-//Nested array sort
+//Nested array sort with fixed sized arrays
 
 #include <cstring> //memmove
 
@@ -54,10 +54,10 @@ alternative compared to the original.
 
 #include "nested-array-sort.h"
 
-int maximumArraySize();
+int maxArraySize();
 
-int numberOfElements = 0;//Keep track of how much memory is used
-int numberOfArrays = 0;//Keep track of the total amount of arrays
+int numElements;//Keep track of how much memory is used
+int numContainers;//Keep track of the total amount of arrays
 
 
 //elementContainer data struct contains values of beginning index and ending index, and an array for all the elements it contains
@@ -72,12 +72,12 @@ struct elementContainer{
 //Element data struct contains the value of the element and the nested array that may be associated with it (nullptr if none is)
 struct element{
 	int val;
-	elementContainer *nestedArray;
+	elementContainer *nestedContainer;
 };
 
 
 //Returns the maximum number of elements to move when inserting an element. If the number of moves exceeds this, drop the element into a nested array.
-int maximumArraySize(){
+int maxArraySize(){
 	return 100;
 }
 
@@ -121,7 +121,8 @@ void insertElement(int value,elementContainer* destination,const int &remainingU
 	}
 	
 	
-	//high == low at this point. This index is either the valuePosition or 1 higher than the valuePosition
+	//use high to compare and assign, (either low or high work, but consistency is needed)
+	//This index is either the valuePosition or 1 higher than the valuePosition
 	if(value >= destination->array[high].val)
 		valuePosition = high;
 	else
@@ -129,7 +130,7 @@ void insertElement(int value,elementContainer* destination,const int &remainingU
 	
 		//if the array is small enough, move the elements in the array to insert the element.
 		//else insert the element into a nested array
-		if(destination->numElements <= maximumArraySize()){
+		if(destination->numElements <= maxArraySize()){
 			
 			//if the value to be inserted is higher than the median then inserting it would move all elements greater than it 1 index higher.
 			//The opposite is done if the value is lower than the median (all elements less than or equal to the value to be inserted are moved an index lower)
@@ -139,7 +140,7 @@ void insertElement(int value,elementContainer* destination,const int &remainingU
 				memmove(destination->array + valuePosition + 2,destination->array + valuePosition + 1,
 					sizeof(element) * (destination->lastElementIndex - valuePosition));
 				destination->array[valuePosition + 1].val = value;
-				destination->array[valuePosition + 1].nestedArray = nullptr;
+				destination->array[valuePosition + 1].nestedContainer = nullptr;
 				++destination->lastElementIndex;
 				++destination->numElements;
 				return;
@@ -150,7 +151,7 @@ void insertElement(int value,elementContainer* destination,const int &remainingU
 				memmove(destination->array + destination->firstElementIndex - 1,destination->array + destination->firstElementIndex,
 					sizeof(element) * (valuePosition - destination->firstElementIndex + 1));
 				destination->array[valuePosition].val = value;
-				destination->array[valuePosition].nestedArray = nullptr;
+				destination->array[valuePosition].nestedContainer = nullptr;
 				--destination->firstElementIndex;
 				++destination->numElements;
 				return;
@@ -158,22 +159,22 @@ void insertElement(int value,elementContainer* destination,const int &remainingU
 		}
 		else{
 			//if a nested array already exists
-			if(destination->array[valuePosition].nestedArray != nullptr){
-				destination = destination->array[valuePosition].nestedArray;
+			if(destination->array[valuePosition].nestedContainer != nullptr){
+				destination = destination->array[valuePosition].nestedContainer;
 				continue;
 			}
 			//else create a nested array and assign it memory
 			else{
-				destination->array[valuePosition].nestedArray = allContainers + numberOfArrays;
-				++numberOfArrays;
+				destination->array[valuePosition].nestedContainer = allContainers + numContainers;
+				++numContainers;
 				
-				destination->array[valuePosition].nestedArray->array = allElements + numberOfElements;
-				numberOfElements += 2 * maximumArraySize();
-				destination->array[valuePosition].nestedArray->firstElementIndex = maximumArraySize();
-				destination->array[valuePosition].nestedArray->lastElementIndex = destination->array[valuePosition].nestedArray->firstElementIndex;
-				destination->array[valuePosition].nestedArray->array[destination->array[valuePosition].nestedArray->firstElementIndex].val = value;
-				destination->array[valuePosition].nestedArray->array[destination->array[valuePosition].nestedArray->firstElementIndex].nestedArray = nullptr;
-				destination->array[valuePosition].nestedArray->numElements = 1;
+				destination->array[valuePosition].nestedContainer->array = allElements + numElements;
+				numElements += 2 * maxArraySize();
+				destination->array[valuePosition].nestedContainer->firstElementIndex = maxArraySize();
+				destination->array[valuePosition].nestedContainer->lastElementIndex = destination->array[valuePosition].nestedContainer->firstElementIndex;
+				destination->array[valuePosition].nestedContainer->array[destination->array[valuePosition].nestedContainer->firstElementIndex].val = value;
+				destination->array[valuePosition].nestedContainer->array[destination->array[valuePosition].nestedContainer->firstElementIndex].nestedContainer = nullptr;
+				destination->array[valuePosition].nestedContainer->numElements = 1;
 				
 				return;
 				
@@ -185,17 +186,26 @@ void insertElement(int value,elementContainer* destination,const int &remainingU
 }
 
 
-//Extract the elements from their nested elementContainers and put them in the correct, sorted order into a standard array
-void placeElementsInArray(elementContainer *source, int *array){
-	static int index = 0;
-	for(int i = source -> firstElementIndex; i <= source -> lastElementIndex; ++i){
-		array[index] = source->array[i].val;
-		++index;
-		if(source->array[i].nestedArray != nullptr){
-			placeElementsInArray(source->array[i].nestedArray, array);
+//Class to extract the elements from their nested elementContainers and put them in the correct, sorted order into a standard array
+class ElementToArrayPlacer {
+	static int index;
+	static void place(elementContainer *source, int *array){
+		for(int i = source->firstElementIndex; i <= source->lastElementIndex; ++i){
+			array[index] = source->array[i].val;
+			++index;
+			if(source->array[i].nestedContainer != nullptr){
+				place(source->array[i].nestedContainer, array);
+			}
 		}
 	}
-}
+	
+	public:
+	static void placeElementsInArray(elementContainer *source, int *array){
+		index = 0;
+		place(source, array);
+	}
+};
+int ElementToArrayPlacer::index;
 
 
 //Allocates memory for allContainers and allElements based on the array length
@@ -224,20 +234,21 @@ void nestedArraySort(int* array, int arrayLength){
 void nestedArraySort(int *array, int arrayLength, elementContainer* const allContainers, element* const allElements){
 	if(arrayLength <= 1)
 		return;
-	
+	int numElements = 0;
+	int numContainers = 0;
 	//Assign parent elementContainer
 	elementContainer *parent = allContainers;
-	++numberOfArrays;
+	++numContainers;
 	
 	//Assign the parent elementContainer's array
 	parent->array = allElements; //2 times the maximum array length, because the starting element is in the middle, and hypothetically the length of the array can span n elements to the end (each element higher than the previous) or n elements to the beginning (each element lower than the previous)
-	numberOfElements += 2*maximumArraySize();	//Subsequent arrays will be assigned at allElements[numberOfElements] so that two arrays never overlap
+	numElements += 2*maxArraySize();	//Subsequent arrays will be assigned at allElements[numElements] so that two arrays never overlap
 	//Add the initial element
 	parent->firstElementIndex = arrayLength;	//halfway between the beginning and end of parent->array
 	parent->lastElementIndex = parent->firstElementIndex;
 	parent->numElements = 1;
 	parent->array[parent->firstElementIndex].val = array[0];
-	parent->array[parent->firstElementIndex].nestedArray = nullptr;
+	parent->array[parent->firstElementIndex].nestedContainer = nullptr;
 	
 	//For each element
 	int remainingUnsortedElements = arrayLength - 1;	//Number of elements minus the initial element
@@ -246,12 +257,12 @@ void nestedArraySort(int *array, int arrayLength, elementContainer* const allCon
 		--remainingUnsortedElements;
 	}
 	
-	placeElementsInArray(parent, array);
+	ElementToArrayPlacer::placeElementsInArray(parent, array);
 	
 	#ifdef DIAGNOSTICS
-	std::cout << "Number of elements in memory: " << numberOfElements << "\n";
-	std::cout << "Number of elementContainers in memory: " << numberOfArrays << "\n";
+	std::cout << "Number of elements in memory: " << numElements << "\n";
+	std::cout << "Number of elementContainers in memory: " << numContainers << "\n";
 	std::cout << "Size of elementContainer: " << sizeof(elementContainer) << ", size of element: " << sizeof(element) << "\nFor a total memory usage of: " << 
-	sizeof(elementContainer) * numberOfArrays + sizeof(element) * numberOfElements << "\n";
+	sizeof(elementContainer) * numContainers + sizeof(element) * numElements << "\n";
 	#endif
 }
