@@ -13,18 +13,49 @@ std::map<std::string,int> g_measurements;
 
 #endif
 
-
-
-
-
 /****************************************************************
 PYRAMID SORT*****************************************************
 *****************************************************************
+Pyramid sort is based on promotion sort: Build a tree of nested arrays, where the nested arrays hold all elements that fall between its parent element
+	and the next element in the parent.
+	Example:
+	{03} - An array with no nested arrays
+	{0!3} 0:{1} - An array with a 1 nested in an array associated with the element 0 - more generally, nested arrays are associated with the greatest element 
+	less than to all elements contained in the array.
+
+There is a small conceptual difference between pyramid sort and promotion sort and a few optimization differences that have been implemented here but I
+	have yet to apply to promotion sort. 
+	-The conceptual difference is that the containers in pyramid sort always hold either 1 or 2 elements (thus forming
+	a tight, evenly distributed tree, or, as I am tentatively calling it, a pyramid). The reason for this is that upon evaluating promotion sort I found
+	out that the binary search evaluated on each nested array was a bottleneck. By limiting the amount of elements to 1 or 2, no binary search is required,
+	only a single comparison to the first element, and a possible comparison on the second element, and only if it exists.
+	-In pyramid sort, each container has a nested array of all elements that fall before the first element. Promotion sort uses a worse solution to handling
+	elements that fall before any values in the parent that involves absolute minimums and duplicating elements.
+	-Checks for promotion happen once the bottom nest level is reached rather than at each nest level while searching down. This means that a promotion
+	can cause successive promotions, but less checks for promotions have to happen in total.
+	-In pyramid sort, memory is allocated in a more localized way to prevent cache misses, whereas in promotion sort memory location depends on when 
+	the allocation happens
+	
+Further possible optimizations:
+	-Eliminating binary search and checks for promotions on each nest level effectively reduced the amount of linearithmic scaling components to a minimum.
+	The only other thing that may be possible to remove would be the while loop inside findInsertLoc(). This would be possible if I knew a way to generate
+	functions during runtime, because the while loop executes a set amount of times based on how many levels up the superParent is. So instead of checking
+	if the bottom nest level is reached every time, a new function could be created every time superParentPromote() is called that executed the contents
+	of the while loop 1 extra time.
+	-Using std::move rather than standard copy assignment on the operations in promote() and insertValue() tht happen O(n) times
+	-For small arrays (probably under 10000 elements or so), the high cost of promotion would not be worth doing as often as happens in pyramid sort. It 
+	would be beneficial in those cases if each container held 2-4 elements instead of 1-2.
+	-For data entries that aren't presumed to be random / of indeterminite order, promotion sort with the optimizations incorporated in this file would
+	probably be a faster data structure. Inserting many contiguous elements at once would be faster if array sizes were larger. An example I can think of
+	would be a text editor adding elements somewhere in the middle of tens of thousands of chararacters of text: creating a few new nested arrays at the
+	correct location to hold an insertion of 100s of characters would be much more efficient than inserting them 1 at a time in the pyramid. Deletions 
+	on multiple contiguous elements should also be faster with larger nested arrays.
 
 *****************************************************************/
 
 
 //TODO:
+//Find if there's a way to remove the while loop in findInsertLoc(), (while(destination->nestedContainer != nullptr))
 //Move binary search to its own function
 
 #include "nested-array-sort.h"
@@ -34,7 +65,7 @@ void printStructure(elementContainer* source, std::string containerIdentifier = 
 #endif
 
 elementContainer* promote(elementContainer* parent, int promotedValue, elementContainer*& superParent, int level,
-							elementContainer** containerAssigner);	//>:<is & needed?
+							elementContainer** containerAssigner);
 
 elementContainer* superParentPromote(int promotedValue, elementContainer*& superParent, int level, 
 							elementContainer** containerAssigner);
@@ -42,7 +73,7 @@ elementContainer* superParentPromote(int promotedValue, elementContainer*& super
 void insertValue(int value, elementContainer* destination, elementContainer*& parent, elementContainer** containerAssigner);
 
 
-//Element data struct contains the value of the element and the nested array that may be associated with it (nullptr if none is)
+//Element data struct contains the value of the element and the nested array that is associated with it
 struct element{
 	int val;
 	elementContainer *nestedContainer;

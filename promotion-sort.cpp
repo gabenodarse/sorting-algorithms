@@ -33,7 +33,7 @@ USEFULNESS
 	memory chunk can be reused. If memory allocation/deallocation is included the run time is a little bit slower
 -The type of data structure that is created seems very useful, and though I haven't learned about it I wouldn't be surprised if a data structure similar to
 	it is used. It allows for quick insertions, deletions and searches. It is like a linked list that is accessible anywhere along the list.
--Improvements can be made on this prototype, which I have done and explained in binary-promotion-sort
+-Improvements can be made on this prototype, which I have done and explained in pyramid-sort
 
 *****************************************************************/
 
